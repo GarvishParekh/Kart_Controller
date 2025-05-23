@@ -41,12 +41,17 @@ public class InputManager : MonoBehaviour
 
     private void ReadGyro()
     {
-        // Example: Tilt left/right maps to -1 to 1
-        float tilt = Input.gyro.attitude.eulerAngles.z;
+        Quaternion deviceRotation = Input.gyro.attitude;
+        // Convert right-handed to Unity's left-handed coordinate system
+        Quaternion correctedRotation = new Quaternion(deviceRotation.x, deviceRotation.y, -deviceRotation.z, -deviceRotation.w);
 
-        if (tilt > 180f) tilt -= 360f; // Normalize Z tilt from -180 to 180
-        tilt = Mathf.Clamp(tilt, -30f, 30f); // Limit extreme values
-        inputData.xGyro = tilt / 30f; // Map to -1 to 1
+        // Rotate to match landscape orientation (e.g., Landscape Left)
+        Vector3 euler = correctedRotation.eulerAngles;
+
+        float tilt = euler.z;
+        if (tilt > 180f) tilt -= 360f; // Normalize to -180..180
+        tilt = Mathf.Clamp(tilt, -30f, 30f); // Adjust max tilt range
+        inputData.xGyro = tilt / 30f; // Normalize to -1 to 1
     }
 
     public void B_AccelerationDown() => inputData.zButton = 1;

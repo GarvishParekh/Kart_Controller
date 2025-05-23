@@ -1,36 +1,55 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WheelColliderController : MonoBehaviour
 {
+    [Header("Components")]
+    [SerializeField] private Rigidbody kartRb;
+
+    [Header("Scriptable")]
+    [SerializeField] private InputData inputData;
+
     [Header("Wheel Colliders")]
-    public WheelCollider frontLeftCollider;
-    public WheelCollider frontRightCollider;
-    public WheelCollider rearLeftCollider;
-    public WheelCollider rearRightCollider;
+    [SerializeField] private WheelCollider frontLeftCollider;
+    [SerializeField] private WheelCollider frontRightCollider;
+    [SerializeField] private WheelCollider rearLeftCollider;
+    [SerializeField] private WheelCollider rearRightCollider;
 
     [Header("Wheel Meshes")]
-    public Transform frontLeftMesh;
-    public Transform frontRightMesh;
-    public Transform rearLeftMesh;
-    public Transform rearRightMesh;
+    [SerializeField] private Transform frontLeftMesh;
+    [SerializeField] private Transform frontRightMesh;
+    [SerializeField] private Transform rearLeftMesh;
+    [SerializeField] private Transform rearRightMesh;
 
     [Header("Car Settings")]
-    public float maxMotorTorque = 1500f; // Adjust for high acceleration
-    public float maxSteerAngle = 30f;
-    public float brakeForce = 3000f;
+    [SerializeField] private float maxMotorTorque = 1500f; // Adjust for high acceleration
+    [SerializeField] private float maxSteerAngle = 30f;
+    [SerializeField] private float brakeForce = 3000f;
+    [SerializeField] private float downForce = 100;
 
-    private float motorInput;
-    private float steerInput;
-    private float brakeInput;
+    float motorInput;
+    float steerInput;
+    float brakeInput;
+
+    private void Awake()
+    {
+        kartRb.centerOfMass = new Vector3(0, -0.3f, 0);
+    }
 
     void Update()
     {
+        switch (inputData.controlType)
+        {
+            case ControlType.KEYBOARD:
+                motorInput = inputData.zKeybaord;
+                steerInput = inputData.xKeybaord;  
+                brakeInput = Input.GetKey(KeyCode.Space) ? 1f : 0f; // Space for brake
+                break;
+            case ControlType.GYRO:
+                motorInput = inputData.zButton;
+                steerInput = inputData.xGyro;
+                break;
+        }
         // Get player input
-        motorInput = Input.GetAxis("Vertical");   // W/S or Up/Down Arrows
-        steerInput = Input.GetAxis("Horizontal"); // A/D or Left/Right Arrows
-        brakeInput = Input.GetKey(KeyCode.Space) ? 1f : 0f; // Space for brake
     }
 
     void FixedUpdate()
@@ -38,13 +57,16 @@ public class WheelColliderController : MonoBehaviour
         HandleMotor();
         HandleSteering();
         UpdateWheels();
+        AppleDownForce();
     }
 
     private void HandleMotor()
     {
-        // Apply motor torque to rear wheels (RWD)
+        // Apply motor torque to rear wheels (AWD)
         rearLeftCollider.motorTorque = motorInput * maxMotorTorque;
         rearRightCollider.motorTorque = motorInput * maxMotorTorque;
+        frontLeftCollider.motorTorque = motorInput * maxMotorTorque;
+        frontRightCollider.motorTorque = motorInput * maxMotorTorque;
 
         // Apply brakes to all wheels
         float appliedBrake = brakeInput * brakeForce;
@@ -56,6 +78,8 @@ public class WheelColliderController : MonoBehaviour
 
     private void HandleSteering()
     {
+        float velocityMagnitude = kartRb.velocity.magnitude;
+        maxSteerAngle = Remap(velocityMagnitude, 0, 30, 20, 5);
         // Apply steer angle to front wheels only
         float steer = steerInput * maxSteerAngle;
         frontLeftCollider.steerAngle = steer;
@@ -77,5 +101,17 @@ public class WheelColliderController : MonoBehaviour
         collider.GetWorldPose(out pos, out rot);
         mesh.position = pos;
         mesh.rotation = rot;
+    }
+    
+    private void AppleDownForce()
+    {
+        float speed = kartRb.velocity.magnitude;
+        kartRb.AddForce(-transform.up * downForce * speed);
+    }
+
+    public float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
+    {
+        float t = Mathf.InverseLerp(fromMin, fromMax, value); // Normalize to 0–1
+        return Mathf.Lerp(toMin, toMax, t); // Remap to new range
     }
 }

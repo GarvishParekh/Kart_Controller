@@ -7,6 +7,7 @@ public class WheelColliderController : MonoBehaviour
 
     [Header("Scriptable")]
     [SerializeField] private InputData inputData;
+    [SerializeField] private KartData kartData;
 
     [Header("Wheel Colliders")]
     [SerializeField] private WheelCollider frontLeftCollider;
@@ -79,7 +80,7 @@ public class WheelColliderController : MonoBehaviour
     private void HandleSteering()
     {
         float velocityMagnitude = kartRb.velocity.magnitude;
-        maxSteerAngle = Remap(velocityMagnitude, 0, 30, 20, 5);
+        maxSteerAngle = Remap(velocityMagnitude, 0, 30, kartData.kartMaxTurn, kartData.kartMinTurn);
         // Apply steer angle to front wheels only
         float steer = steerInput * maxSteerAngle;
         frontLeftCollider.steerAngle = steer;

@@ -39,19 +39,15 @@ public class InputManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R)) ActionHandler.RestartScene?.Invoke();
     }
 
+    float tiltValue = 0;
+    float sensitivity = 2;
     private void ReadGyro()
     {
-        Quaternion deviceRotation = Input.gyro.attitude;
-        // Convert right-handed to Unity's left-handed coordinate system
-        Quaternion correctedRotation = new Quaternion(deviceRotation.x, deviceRotation.y, -deviceRotation.z, -deviceRotation.w);
+        float rawTilt = Input.acceleration.x;
 
-        // Rotate to match landscape orientation (e.g., Landscape Left)
-        Vector3 euler = correctedRotation.eulerAngles;
-
-        float tilt = euler.z;
-        if (tilt > 180f) tilt -= 360f; // Normalize to -180..180
-        tilt = Mathf.Clamp(tilt, -30f, 30f); // Adjust max tilt range
-        inputData.xGyro = tilt / 30f; // Normalize to -1 to 1
+        // Clamp value between -1 and 1
+        tiltValue = Mathf.Clamp(rawTilt * sensitivity, -1f, 1f);
+        inputData.xGyro = tiltValue;
     }
 
     public void B_AccelerationDown() => inputData.zButton = 1;
